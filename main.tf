@@ -28,10 +28,16 @@ resource "aws_eip" "ngw" {
   tags = merge(var.tags, {Name = "${var.env}-ngw"})
 }
 
-resource "aws_nat_gateway" "example" {
+resource "aws_nat_gateway" "ngw" {
   count = length(var.subnets["public"].cidr_block)
   allocation_id = aws_eip.ngw[count.index].id
   subnet_id     = module.subnets["public"].subnet_ids[count.index]
   tags = merge(var.tags, {Name = "${var.env}-ngw"})
+}
 
+resource "aws_route" "igw" {
+  count = length(local.all_private_subnet_ids)
+  route_table_id            = length(local.all_private_subnet_ids[count.index])
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id = element(aws_nat_gateway.ngw.*.id, count.index )
 }
